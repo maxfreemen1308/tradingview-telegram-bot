@@ -8,4 +8,4 @@ services:
       - key: TELEGRAM_TOKEN
         value: 7580068850:AAHHBhP8uJGQUTnSZlD5C7vGgm_twR1uC0s
       - key: CHAT_ID
-        value: your_chat_id_here
+        value: 291878249
