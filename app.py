@@ -2,6 +2,7 @@ from flask import Flask, request
 import requests
 import os
 import re
+import sys
 
 app = Flask(__name__)
 
@@ -51,4 +52,6 @@ def webhook():
     return 'OK', 200
 
 if __name__ == '__main__':
+    # Забезпечити моментальний вивід print()
+    sys.stdout.reconfigure(line_buffering=True)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
