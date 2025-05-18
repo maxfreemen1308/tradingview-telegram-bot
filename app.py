@@ -15,8 +15,9 @@ last_price = None
 def webhook():
     global last_price
 
-    # Отримуємо повідомлення як form-дані
     message = request.form.get('message', '⚠️ Новий сигнал без тексту')
+    print("🔍 Отримано повідомлення:", message)  # <== це покаже точне повідомлення в логах Render
+
 
     # Парсимо з тексту: "SELL on BTCUSDT at price 67200.55"
     match = re.search(r'(BUY|SELL) on (\w+) at price (\d+(?:\.\d+)?)', message, re.IGNORECASE)
