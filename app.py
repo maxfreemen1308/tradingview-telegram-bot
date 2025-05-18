@@ -15,8 +15,8 @@ last_price = None
 def webhook():
     global last_price
 
-    data = request.json
-    message = data.get('message', '⚠️ Новий сигнал без тексту')
+    # Отримуємо повідомлення як form-дані
+    message = request.form.get('message', '⚠️ Новий сигнал без тексту')
 
     # Парсимо з тексту: "SELL on BTCUSDT at price 67200.55"
     match = re.search(r'(BUY|SELL) on (\w+) at price (\d+(?:\.\d+)?)', message, re.IGNORECASE)
@@ -26,7 +26,6 @@ def webhook():
         symbol = match.group(2)
         current_price = float(match.group(3))
 
-        # Розрахунок різниці у %
         if last_price is not None:
             percent_change = ((current_price - last_price) / last_price) * 100
             diff_text = f'📊 Зміна з минулого сигналу: {percent_change:.2f}%'
@@ -45,7 +44,6 @@ def webhook():
     else:
         send_text = '⚠️ Новий сигнал без розпізнаної ціни.'
 
-    # Надсилаємо в Telegram
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     requests.post(url, json={'chat_id': CHAT_ID, 'text': send_text})
 
