@@ -5,23 +5,23 @@ import re
 
 app = Flask(__name__)
 
-# Отримуємо токен і чат ID з середовища
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 
-# Зберігаємо попередню ціну для обчислення відсоткової різниці
 last_price = None
 
 @app.route('/', methods=['POST'])
 def webhook():
     global last_price
 
-    data = request.get_json()  # ✅ TradingView надсилає JSON
+    if request.content_type == 'application/json':
+        data = request.get_json()
+        message = data.get('message', '')
+    else:
+        message = request.data.decode('utf-8')
 
-    message = data.get('message', '⚠️ Новий сигнал без тексту')
     print(f"🔍 Отримано повідомлення: {message}")
 
-    # Розпізнаємо BUY/SELL, назву тикера і ціну
     match = re.search(r'(BUY|SELL) on (\w+) at price (\d+(?:\.\d+)?)', message, re.IGNORECASE)
 
     if match:
@@ -39,12 +39,10 @@ def webhook():
     else:
         response = "⚠️ Новий сигнал без розпізнаної ціни."
 
-    # Надсилаємо повідомлення в Telegram
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
     requests.post(url, json={'chat_id': CHAT_ID, 'text': response})
 
     return 'OK', 200
 
-# Запуск Flask-сервера
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
