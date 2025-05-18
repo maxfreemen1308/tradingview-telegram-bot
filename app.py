@@ -2,56 +2,49 @@ from flask import Flask, request
 import requests
 import os
 import re
-import sys
 
 app = Flask(__name__)
 
+# Отримуємо токен і чат ID з середовища
 TELEGRAM_TOKEN = os.getenv('TELEGRAM_TOKEN')
 CHAT_ID = os.getenv('CHAT_ID')
 
-# Глобальна змінна для зберігання попередньої ціни
+# Зберігаємо попередню ціну для обчислення відсоткової різниці
 last_price = None
 
 @app.route('/', methods=['POST'])
 def webhook():
     global last_price
 
-    message = request.form.get('message', '⚠️ Новий сигнал без тексту')
-    print("🔍 Отримано повідомлення:", message)  # <== це покаже точне повідомлення в логах Render
+    data = request.get_json()  # ✅ TradingView надсилає JSON
 
+    message = data.get('message', '⚠️ Новий сигнал без тексту')
+    print(f"🔍 Отримано повідомлення: {message}")
 
-    # Парсимо з тексту: "SELL on BTCUSDT at price 67200.55"
+    # Розпізнаємо BUY/SELL, назву тикера і ціну
     match = re.search(r'(BUY|SELL) on (\w+) at price (\d+(?:\.\d+)?)', message, re.IGNORECASE)
-    
+
     if match:
-        action = match.group(1).upper()
-        symbol = match.group(2)
-        current_price = float(match.group(3))
+        action, ticker, price_str = match.groups()
+        price = float(price_str)
+        response = f"📈 Signal: {action.upper()} on {ticker} at ${price:.2f}"
 
         if last_price is not None:
-            percent_change = ((current_price - last_price) / last_price) * 100
-            diff_text = f'📊 Зміна з минулого сигналу: {percent_change:.2f}%'
-        else:
-            diff_text = 'ℹ️ Перший сигнал, немає з чим порівняти.'
+            diff = price - last_price
+            diff_percent = (diff / last_price) * 100
+            sign = "▲" if diff > 0 else "▼"
+            response += f"\n{sign} Зміна від попередньої ціни: {diff:.2f} USD ({diff_percent:.2f}%)"
 
-        last_price = current_price
-
-        send_text = (
-            f'📈 TradingView Signal\n'
-            f'🔔 Дія: {action}\n'
-            f'💰 Актив: {symbol}\n'
-            f'💵 Ціна: {current_price}\n'
-            f'{diff_text}'
-        )
+        last_price = price
     else:
-        send_text = '⚠️ Новий сигнал без розпізнаної ціни.'
+        response = "⚠️ Новий сигнал без розпізнаної ціни."
 
+    # Надсилаємо повідомлення в Telegram
     url = f'https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage'
-    requests.post(url, json={'chat_id': CHAT_ID, 'text': send_text})
+    requests.post(url, json={'chat_id': CHAT_ID, 'text': response})
 
     return 'OK', 200
 
+# Запуск Flask-сервера
 if __name__ == '__main__':
-    # Забезпечити моментальний вивід print()
-    sys.stdout.reconfigure(line_buffering=True)
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
