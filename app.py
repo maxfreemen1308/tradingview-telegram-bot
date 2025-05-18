@@ -27,13 +27,13 @@ def webhook():
     if match:
         action, ticker, price_str = match.groups()
         price = float(price_str)
-        response = f"📈 Signal: {action.upper()} on {ticker} at ${price:.2f}"
+        response = f"📈 Signal: {action.upper()} on {ticker} at ${price:.4f}"
 
         if last_price is not None:
             diff = price - last_price
             diff_percent = (diff / last_price) * 100
             sign = "▲" if diff > 0 else "▼"
-            response += f"\n{sign} Зміна від попередньої ціни: {diff:.2f} USD ({diff_percent:.2f}%)"
+            response += f"\n{sign} Зміна від попередньої ціни: {diff:.4f} USD ({diff_percent:.4f}%)"
 
         last_price = price
     else:
